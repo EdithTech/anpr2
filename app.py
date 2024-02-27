@@ -3,10 +3,8 @@ import os
 from deeplearning import object_detection
 from flask_mysqldb import MySQL
 import mysql.connector
-from fuzzywuzzy import fuzz
 import re
 
-# webserver gateway interface
 app = Flask(__name__)
 
 BASE_PATH = os.getcwd()
@@ -16,14 +14,19 @@ db = mysql.connector.connect(
     host="localhost",
     user="root",
     passwd="Edith@2023",
-    database="anpr"
+    database="ANPR_System"
 )
+
+if(db is not None):
+    print("connected to database")
 
 mysql = MySQL(app)
 
 cur = db.cursor()
 cur.execute("select vNO from VEHICLEDB")
 dbCol = cur.fetchall()
+
+# print(dbCol)
 
 @app.route('/',methods=['POST','GET'])
 def index():
@@ -34,21 +37,36 @@ def index():
         path_save = os.path.join(UPLOAD_PATH,filename)
         upload_file.save(path_save)
         text_list = object_detection(path_save,filename)
-
+        
+        
         print(text_list)
+
+        # def remove_non_alphanumeric(text):
+        #     return re.sub(r'[^a-zA-Z0-9]', '', text)
+        # text_list = [remove_non_alphanumeric(text) for text in text_list]
+
+        # print(text_list)
+
+        # print(type(text_list))
+
+        # cur.execute("SELECT * FROM VEHICLEDB WHERE vNO = (%s)", (text_list))
+        # feachdata = cur.fetchall()
+        # print(feachdata)
 
         def remove_non_alphanumeric(text):
             return re.sub(r'[^a-zA-Z0-9]', '', text)
-        text_list = [remove_non_alphanumeric(text) for text in text_list]   
-              
-        print(text_list)
 
-        cur.execute("SELECT * FROM VEHICLEDB WHERE vNO = (%s)", (text_list))
+        text_str = ''.join([remove_non_alphanumeric(text) for text in text_list])
+
+        print(text_str)
+
+        print(type(text_str))
+
+        cur = db.cursor()
+        cur.execute("SELECT * FROM VEHICLEDB WHERE vNO = (%s)", (text_str,))
         feachdata = cur.fetchall()
+        print(feachdata)
 
-
-        # cur.execute("select * from VEHICLEDB where vNO = (%s)", (text_list))
-        # feachdata = cur.fetchall() 
 
         return render_template('index.html',upload=True,upload_image=filename,text=text_list,no=len(text_list), rol=feachdata)
 
@@ -73,7 +91,6 @@ if __name__ =="__main__":
 #94
     #---------------------------------------------------------------
         # simVal = []
-        # mxThreshold = -1
 
         # for db_number in dbCol:
         #     similarity = fuzz.ratio(text_list, db_number)
@@ -86,7 +103,7 @@ if __name__ =="__main__":
         # print("Max Similarity : ", max(simVal))
         # cur.execute("select * from VEHICLEDB where vNO = (%s)", (dbCol[ind]))
         # feachdata = cur.fetchall() 
-
+    
 #110
 # ----------------------------------------------------------------------------
     # num = ''.join(text_list)
@@ -105,3 +122,6 @@ if __name__ =="__main__":
     # db.close() // if we uncomment this then we have to restart the server again and again
     # db.commit()
 
+
+
+# mysql-connector-python       8.2.0
