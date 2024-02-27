@@ -4,11 +4,28 @@ from deeplearning import object_detection
 from flask_mysqldb import MySQL
 import mysql.connector
 import re
+from dotenv import load_dotenv
+import requests
+import json
 
 app = Flask(__name__)
 
 BASE_PATH = os.getcwd()
 UPLOAD_PATH = os.path.join(BASE_PATH,'static/upload/')
+
+load_dotenv()
+
+headers = os.getenv("API_HEADERS")
+
+headers = json.loads(headers)
+
+url = os.getenv("API_URL")
+
+data = {
+    "providers": "google",
+    "language": "en",
+    "fallback_providers": ""
+}
 
 db = mysql.connector.connect(
     host="localhost",
@@ -37,21 +54,22 @@ def index():
         path_save = os.path.join(UPLOAD_PATH,filename)
         upload_file.save(path_save)
         text_list = object_detection(path_save,filename)
-        
+
+        files = {"file": open(path_save, 'rb')}
+        response = requests.post(url, data=data, files=files, headers=headers)
+
+        result = json.loads(response.text)
+
+        print("Api Result - ", result["google"]["text"])
         
         print(text_list)
 
-        # def remove_non_alphanumeric(text):
-        #     return re.sub(r'[^a-zA-Z0-9]', '', text)
-        # text_list = [remove_non_alphanumeric(text) for text in text_list]
+        pattern = r'\b[A-Z]{2}[-\s]?\d{2}[A-Z]{1,2}[-\s]?\d{1,4}\b'
 
-        # print(text_list)
+# Find all matches in the text
+        vehicle_numbers = re.findall(pattern, result["google"]["text"])
 
-        # print(type(text_list))
-
-        # cur.execute("SELECT * FROM VEHICLEDB WHERE vNO = (%s)", (text_list))
-        # feachdata = cur.fetchall()
-        # print(feachdata)
+        print("Vehicle numbers", vehicle_numbers)
 
         def remove_non_alphanumeric(text):
             return re.sub(r'[^a-zA-Z0-9]', '', text)
@@ -75,6 +93,20 @@ def index():
 
 if __name__ =="__main__":
     app.run(debug=True)
+
+
+# 67
+    # def remove_non_alphanumeric(text):
+        #     return re.sub(r'[^a-zA-Z0-9]', '', text)
+        # text_list = [remove_non_alphanumeric(text) for text in text_list]
+
+        # print(text_list)
+
+        # print(type(text_list))
+
+        # cur.execute("SELECT * FROM VEHICLEDB WHERE vNO = (%s)", (text_list))
+        # feachdata = cur.fetchall()
+        # print(feachdata)
 
 
 #87
