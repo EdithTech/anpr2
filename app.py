@@ -55,6 +55,9 @@ def index():
         upload_file.save(path_save)
         text_list = object_detection(path_save,filename)
 
+        print("Path - ", path_save)
+        print("Path Type- ", type(path_save))
+
         files = {"file": open(path_save, 'rb')}
         response = requests.post(url, data=data, files=files, headers=headers)
 
@@ -63,27 +66,25 @@ def index():
         print("Api Result - ", result["google"]["text"])
         
         print(text_list)
+        
+        pattern = r'\b[A-Z]{2}\s?\d{2}\s?[A-Z\d]{1,2}\s?\d{1,4}\b'
+        # pattern = r'\b[A-Z]{2}[-\s]?\d{2}[A-Z\d]{1,2}[-\s]?\d{1,4}\b'
+       
 
-        pattern = r'\b[A-Z]{2}[-\s]?\d{2}[A-Z]{1,2}[-\s]?\d{1,4}\b'
-
-# Find all matches in the text
+        # Find all matches in the text
         vehicle_numbers = re.findall(pattern, result["google"]["text"])
-
+        print(type(result["google"]["text"]))
         print("Vehicle numbers", vehicle_numbers)
+        print("Vehicle numbers type - ", type(vehicle_numbers))
 
         def remove_non_alphanumeric(text):
             return re.sub(r'[^a-zA-Z0-9]', '', text)
 
         text_str = ''.join([remove_non_alphanumeric(text) for text in text_list])
 
-        print(text_str)
-
-        print(type(text_str))
-
         cur = db.cursor()
         cur.execute("SELECT * FROM VEHICLEDB WHERE vNO = (%s)", (text_str,))
         feachdata = cur.fetchall()
-        print(feachdata)
 
 
         return render_template('index.html',upload=True,upload_image=filename,text=text_list,no=len(text_list), rol=feachdata)
